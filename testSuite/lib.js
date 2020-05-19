@@ -264,7 +264,7 @@ class BulkDataClient
         this.statusResponse  = null;
         this.cancelRequest   = null;
         this.cancelResponse  = null;
-        this.accessToken     = null;
+        this.accessToken     = process.env.TOKEN;
     }
 
     /**
@@ -283,13 +283,14 @@ class BulkDataClient
             ...options
         };
 
-        if (this.options.requiresAuth && !skipAuth) {
+        // we always set an Authentication token for BCDA
+       // if (this.options.requiresAuth) {
             const accessToken = await this.getAccessToken();
             requestOptions.headers = {
                 ...requestOptions.headers,
                 authorization: "Bearer " + accessToken
             };
-        }
+        //}
 
         stripObjectValues(requestOptions, undefined, true);
         return customRequest(requestOptions);
@@ -343,9 +344,6 @@ class BulkDataClient
      */
     async getAccessToken(options = {})
     {
-        if (!this.accessToken || options.force) {
-            this.accessToken = await this.authorize(options);
-        }
         return this.accessToken;
     }
 
