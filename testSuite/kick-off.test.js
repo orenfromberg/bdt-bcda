@@ -6,11 +6,11 @@ const exportTypes = [
         name       : "Patient-level export",
         mountPoint : "patientExportEndpoint"
     },
-    {
+    /*{
         idPrefix   : "System-level",
         name       : "System-level export",
         mountPoint : "systemExportEndpoint"
-    },
+    },*/
     {
         idPrefix   : "Group-level",
         name       : "Group-level export",
@@ -88,7 +88,7 @@ module.exports = function(describe, it) {
                 client.expectFailedKickOff();
             });
 
-            ([
+            [
                 "application/fhir+ndjson",
                 "application/ndjson",
                 "ndjson"
@@ -115,7 +115,7 @@ module.exports = function(describe, it) {
                     // Verify that we didn't get an error
                     client.expectSuccessfulKickOff();
                 });
-            }));
+            });
 
             ([
                 "application/xml",
