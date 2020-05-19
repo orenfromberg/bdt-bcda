@@ -16,9 +16,6 @@ Usage:
 An Example call might look like this:
 TOKEN=xystekdkjd node index.js --pattern "testSuite/**/!(authorization.test.js")
 
---or if your token is in a file named mytoken in the same directory as index.js:
-TOKEN=command$(cat token) node index.js --pattern "testSuite/**/!(authorization.test.js")
-
 Notes:
 
 1. Supplying the --pattern "testSuite/**/!(authorization.test.js") skips the authorization tests, which are not supported.
