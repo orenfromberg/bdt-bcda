@@ -1,39 +1,8 @@
 const request  = require("request");
-const crypto   = require("crypto");
-const jwt      = require("jsonwebtoken");
-const jwkToPem = require("jwk-to-pem");
 const expect   = require("code").expect;
 const { URL }  = require("url");
-const jwk      = require("jwk-lite");
 
 
-/**
- * Generates a JWKS containing a public and a private key pair
- * @param {"RS384"|"ES384"} alg The algorithm to use
- */
-function createJWKS(alg = "RS384") {
-    alg = String(alg || "").toUpperCase();
-    if (["RS384", "ES384"].indexOf(alg) === -1) {
-        alg = "RS384";
-    }
-
-    return jwk.generateKey(alg).then(result => {
-        return Promise.all([
-            jwk.exportKey(result.publicKey),
-            jwk.exportKey(result.privateKey)
-        ]).then(keys => {
-            let out = { keys: [...keys] };
-            let kid = crypto.randomBytes(16).toString("hex");
-            out.keys.forEach(key => {
-                key.kid = kid;
-                if (!key.alg) {
-                    key.alg = alg;
-                }
-            });
-            return out;
-        });
-    });
-}
 
 /**
  * Deletes all the properties of an object that have value equal to the provided
@@ -204,48 +173,6 @@ function expectOperationOutcome(response, message = "")
     }
 }
 
-/**
- * Creates an authentication token
- * @param {Object} claims 
- * @param {Object} signOptions 
- * @param {Object} privateKey 
- */
-function createClientAssertion(claims = {}, signOptions = {}, privateKey)
-{
-    let jwtToken = {
-        exp: Date.now() / 1000 + 300, // 5 min
-        jti: crypto.randomBytes(32).toString("hex"),
-        ...claims
-    };
-
-    const _signOptions = {
-        algorithm: privateKey.alg,
-        keyid: privateKey.kid,
-        ...signOptions,
-        header: {
-            // jku: jwks_url || undefined,
-            kty: privateKey.kty,
-            ...signOptions.header
-        }
-    };
-
-    return jwt.sign(jwtToken, jwkToPem(privateKey, { private: true }), _signOptions);
-}
-
-function authenticate(tokenUrl, postBody) {
-    return customRequest({
-        method: "POST",
-        url   : tokenUrl,
-        json  : true,
-        form  : {
-            scope: "system/*.*",
-            grant_type: "client_credentials",
-            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-            // client_assertion: signedToken,
-            ...postBody
-        }
-    });
-}
 
 /**
  * Implements all the interactions with a bulk-data server that tests may need
@@ -296,44 +223,6 @@ class BulkDataClient
         return customRequest(requestOptions);
     }
 
-    /**
-     * Makes an authorization request and logs the request and the response.
-     * @param {Object} options
-     * @param {String} options.scope Scopes to request (default "system/*.read")
-     */
-    async authorize({ scope, requestLabel, responseLabel })
-    {
-        const request = customRequest({
-            method   : "POST",
-            uri      : this.options.tokenEndpoint,
-            json     : true,
-            strictSSL: !!this.options.strictSSL,
-            form     : {
-                scope                : scope || "system/*.read",
-                grant_type           : "client_credentials",
-                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                client_assertion     : createClientAssertion({
-                    aud: this.options.tokenEndpoint,
-                    iss: this.options.clientId,
-                    sub: this.options.clientId
-                }, {}, this.options.privateKey)
-            }
-        });
-
-        this.testApi.logRequest(request, requestLabel || "Authorization Request");
-        const { response } = await request.promise();
-        this.testApi.logResponse(response, responseLabel || "Authorization Response");
-
-        if (!response.body.access_token) {
-            throw new Error(
-                `Unable to authorize. The authorization request returned ${
-                    response.statusCode
-                }: "${response.statusMessage}"`
-            );
-        }
-
-        return response.body.access_token;
-    }
 
     /**
      * This is an async getter for the access token. 
@@ -587,13 +476,10 @@ class BulkDataClient
 
 module.exports = {
     request: customRequest,
-    createClientAssertion,
     expectOperationOutcome,
     expectStatusCode,
     expectUnauthorized,
     expectJson,
     wait,
     BulkDataClient,
-    createJWKS,
-    authenticate
 };
