@@ -39,18 +39,4 @@ module.exports = {
     // server.
     fastestResource: "Patient",
 
-    // The Private Key as JWK
-    privateKey   : {
-        "kty": "EC",
-        "crv": "P-384",
-        "d": "e8VccpNV6F-uZpGYt_RUq_qJ1jEM1OKtx7QiPUOxAlB9VXn1ialbTTNGpzTSMAhY",
-        "x": "CVQvGDquuOoVG2e8MS-WEvMNmr3j6X64SET-Cm2BGENhlPS0AMpZxSiVAh5tfrvv",
-        "y": "qLmWeZQeBuiLyjif_7lopX-ea7ws0jB5PqumGJDVK4DXWj4aDJ7CX1fMR8rmwsMo",
-        "key_ops": [
-            "sign"
-        ],
-        "ext": true,
-        "kid": "457e3b331fa4dfe79591920ac12bccc6",
-        "alg": "ES384"
-    }
 };
