@@ -2,7 +2,8 @@
 module.exports = {
 
     // REQUIRED: The full URL of the server to which we can append "/$export".
-    baseURL: "https://sandbox.bcda.cms.gov/api/v1",
+    // baseURL: "https://sandbox.bcda.cms.gov/api/v1",
+    baseURL: `${process.env.BASE_URL}/api/v1`,
 
     // REQUIRED: The full URL of the token endpoint
     tokenEndpoint: "",
