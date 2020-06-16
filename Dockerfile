@@ -1,10 +1,12 @@
- FROM node:current-slim
+FROM node:current-slim
 
- WORKDIR '/'
+WORKDIR '/'
 
- COPY package.json .
- RUN npm install
+RUN apt update -y && apt install curl jq -y
 
- CMD ["npm", "start"]
- COPY . .
+COPY package.json .
+RUN npm install
 
+COPY . .
+
+CMD ["./run-bdt.sh"]
