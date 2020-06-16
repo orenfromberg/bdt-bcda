@@ -17,8 +17,5 @@
     "moment": "^2.24.0",
     "request": "^2.88.0",
     "sax": "^1.2.4"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.4"
   }
 }
