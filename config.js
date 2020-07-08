@@ -29,7 +29,7 @@ module.exports = {
     // root (e.g.: "/Group/5/$export"). Please use the id of the group having
     // the least amount of resources. Keep this empty if the server does not
     // support group-level export.
-    groupExportEndpoint: "/Group/all/$export",
+    groupExportEndpoint: "/Group/6/$export",
 
     // While testing we need to attempt downloading at least one resource type.
     // Please enter the resource type that would be fast to export (because
