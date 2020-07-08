@@ -1,9 +1,10 @@
-const expect           = require("code").expect;
-const moment           = require("moment");
+const expect = require("code").expect;
+const moment = require("moment");
 const {
     BulkDataClient,
     expectStatusCode
 } = require("./lib");
+const { create } = require("domain");
 
 
 const REGEXP_INSTANT = new RegExp(
@@ -13,7 +14,19 @@ const REGEXP_INSTANT = new RegExp(
     ":[0-5][0-9]|14:00))"
 );
 
-module.exports = function(describe, it) {
+module.exports = function (describe, it) {
+    function createClient(cfg, api) {
+        // Create a client to download the fastest resource.
+        let pathName = cfg.patientExportEndpoint || cfg.groupExportEndpoint;
+
+        if (!pathName) {
+            api.setNotSupported(`No export endpoints configured`);
+            return null;
+        }
+
+        const resourceType = cfg.fastestResource || "Patient";
+        return new BulkDataClient(cfg, api, `${cfg.baseURL}${pathName}?_type=${resourceType}`);
+    }
 
     describe("Status Endpoint", () => {
 
@@ -37,19 +50,16 @@ module.exports = function(describe, it) {
         // prevent the export from completing, the server SHOULD respond with a
         // JSON-encoded FHIR OperationOutcome resource.
 
-        it ({
-            id  : "Status-01",
+        it({
+            id: "Status-01",
             name: "Responds with 202 for active transaction IDs",
             description: "The status endpoint should return **202** status code until the export is completed.\n\n" +
                 'See [https://github.com/HL7/bulk-data/blob/master/spec/export/index.md#response---in-progress-status]' +
                 '(https://github.com/HL7/bulk-data/blob/master/spec/export/index.md#response---in-progress-status).'
         }, async (cfg, api) => {
 
-            // Create a client that would export patients (or whatever the
-            // fastest resource is) modified since the last month
-            const resourceType = cfg.fastestResource || "Patient";
-            const client = new BulkDataClient(cfg, api, `${cfg.baseURL}/$export?_type=${resourceType}`);
-            client.url.searchParams.set(cfg.sinceParam || "_since", moment().subtract(1, "months").format("YYYY-MM-DD"));
+            const client = createClient(cfg, api)
+            client.url.searchParams.set(cfg.sinceParam || "_since", moment().subtract(1, "months").toISOString());
 
             // Start an export
             await client.kickOff();
@@ -65,8 +75,8 @@ module.exports = function(describe, it) {
             expectStatusCode(client.statusResponse, 202, "the status code returned by the status endpoint must be 202");
         });
 
-        it ({
-            id  : "Status-02",
+        it({
+            id: "Status-02",
             name: "Replies properly in case of error",
             description: "Runs a set of assertions to verify that:\n" +
                 "- The returned HTTP status code is 5XX\n" +
@@ -82,8 +92,8 @@ module.exports = function(describe, it) {
             TODO: Figure out how to produce errors!
         */);
 
-        it ({
-            id  : "Status-03",
+        it({
+            id: "Status-03",
             name: "Generates valid status response",
             description: "Runs a set of assertions to verify that:\n" +
                 "- The status endpoint should return **200** status code when the export is completed\n" +
@@ -102,10 +112,8 @@ module.exports = function(describe, it) {
                 "    - Every item may a `count` number property\n"
         }, async (cfg, api) => {
 
-            // Create a client that would export patients (or whatever the
-            // fastest resource is) modified in the last month
             const resourceType = cfg.fastestResource || "Patient";
-            const client = new BulkDataClient(cfg, api, `${cfg.baseURL}/$export?_type=${resourceType}`);
+            const client = createClient(cfg, api);
 
             // Do an actual export (except that we do not download files here)
             await client.kickOff();
@@ -121,7 +129,8 @@ module.exports = function(describe, it) {
             // The server MAY return an Expires header indicating when the files listed will no longer be available.
             if (client.statusResponse.headers["expires"]) {
                 expect(client.statusResponse.headers["expires"], "the expires header must be a string if present").to.be.a.string();
-                expect(moment(client.statusResponse.headers["expires"]).diff(moment(), "seconds") > 0).to.be.true();
+                const expiresDate = new Date(client.statusResponse.headers["expires"])
+                expect(moment(expiresDate).diff(moment(), "seconds") > 0).to.be.true();
             }
 
             // transactionTime - a FHIR instant type that indicates the server's time when the query is run.
@@ -160,13 +169,13 @@ module.exports = function(describe, it) {
                 // in the response.
                 expect(item, "every output item must have 'type' property").to.include("type");
                 expect(item.type, "every output item's 'type' property must equal the exported resource type").to.include(resourceType);
-                
+
                 // url - the path to the file. The format of the file SHOULD reflect that requested in the
                 // _outputFormat parameter of the initial kick-off request. Note that the files-for-download
                 // MAY be served by a file server other than a FHIR-specific server.
                 expect(item, "every output item must have 'url' property").to.include("url");
                 expect(item.url, "every output item url must be a string").to.be.a.string();
-                
+
                 // Each file item MAY optionally contain the following field:
                 if (item.hasOwnProperty("count")) {
                     // count - the number of resources in the file, represented as a JSON number.
@@ -191,13 +200,13 @@ module.exports = function(describe, it) {
                 // in the response.
                 expect(item, "every error item must have 'type' property").to.include("error");
                 expect(item.type, "every error item's 'type' property must equal the exported resource type").to.include(resourceType);
-                
+
                 // url - the path to the file. The format of the file SHOULD reflect that requested in the
                 // _outputFormat parameter of the initial kick-off request. Note that the files-for-download
                 // MAY be served by a file server other than a FHIR-specific server.
                 expect(item, "every error item must have 'url' property").to.include("url");
                 expect(item.url, "every error item url must be a string").to.be.a.string();
-                
+
                 // Each file item MAY optionally contain the following field:
                 if (item.hasOwnProperty("count")) {
                     // count - the number of resources in the file, represented as a JSON number.
