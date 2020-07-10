@@ -7,7 +7,7 @@ const {
     createClientAssertion,
     createJWKS,
     expectStatusCode,
-    authenticate
+    // authenticate
 } = require("./lib");
 
 
@@ -37,6 +37,10 @@ module.exports = function(describe, it) {
                     name: `Requires authorization header`,
                     description: `The server should require authorization header at the ${name} endpoint`
                 }, async function(cfg, api) {
+
+                    if (cfg.authType == "none") {
+                        return api.setNotSupported(`This server does not support authorization`);
+                    }
 
                     if (!cfg[prop]) {
                         return api.setNotSupported(`The ${name} is not supported by this server`);
@@ -152,6 +156,8 @@ module.exports = function(describe, it) {
         });
 
         describe("Token endpoint", () => {
+
+
             it ({
                 id  : `Auth-02`,
                 name: 'Requires "application/x-www-form-urlencoded" POSTs',
@@ -160,6 +166,11 @@ module.exports = function(describe, it) {
                     "authorization server's token endpoint URL, using content-type " +
                     "`application/x-www-form-urlencoded`."
             }, async (cfg, api) => {
+
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 const req = request({
                     method   : "POST",
                     uri      : cfg.tokenEndpoint,
@@ -199,6 +210,10 @@ module.exports = function(describe, it) {
                     "`grant_type parameter` is not sent by the client."
             }, async (cfg, api) => {
 
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -231,9 +246,14 @@ module.exports = function(describe, it) {
                 description: "The server should reply with 400 Bad Request if the " +
                     "`grant_type parameter` is not `client_credentials`."
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
+
                 const req = request({
                     method   : "POST",
                     uri      : cfg.tokenEndpoint,
@@ -263,6 +283,11 @@ module.exports = function(describe, it) {
                 description: "The server should reply with 400 Bad Request if the " +
                     "`client_assertion_type` parameter is not sent by the client."
             }, async (cfg, api) => {
+
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -295,6 +320,11 @@ module.exports = function(describe, it) {
                     "`client_assertion_type` parameter is not equal to " +
                     "`urn:ietf:params:oauth:client-assertion-type:jwt-bearer`."
             }, async (cfg, api) => {
+
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -328,6 +358,11 @@ module.exports = function(describe, it) {
                 description: "This test verifies that if the client sends something " +
                     "other then a JWT, the server will detect it and reject the request."
             }, async (cfg, api) => {
+
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 const req = request({
                     method   : "POST",
                     uri      : cfg.tokenEndpoint,
@@ -364,6 +399,10 @@ module.exports = function(describe, it) {
                     "authorization server's \"token URL\" (the same URL to which " +
                     "this authentication JWT will be posted)."
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -398,6 +437,10 @@ module.exports = function(describe, it) {
                 name: "Validates authenticationToken.iss",
                 description: "The `iss` claim of the authentication JWT must equal the registered `client_id`"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -439,6 +482,10 @@ module.exports = function(describe, it) {
                 name: "Only accept registered client IDs",
                 description: "Verify that clients can't use random client id"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -473,6 +520,10 @@ module.exports = function(describe, it) {
                 name: "Requires scope",
                 description: "The server should reject requests to the token endpoint that do not specify a scope"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -507,6 +558,10 @@ module.exports = function(describe, it) {
                 name: "Rejects empty scope",
                 description: "The server should reject requests to the token endpoint that are requesting an empty scope"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
+
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -542,6 +597,9 @@ module.exports = function(describe, it) {
                 name: "Validates scopes",
                 description: "This test verifies that only valid system scopes are accepted by the server"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -585,6 +643,9 @@ module.exports = function(describe, it) {
                 name: "Supports wildcard action scopes",
                 description: "Verifies that scopes like `system/Patient.*` are supported"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -617,6 +678,9 @@ module.exports = function(describe, it) {
                 name: "Rejects unknown action scopes",
                 description: "Verifies that scopes like `system/Patient.unknownAction` are rejected"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -659,6 +723,9 @@ module.exports = function(describe, it) {
                 name: "Supports wildcard resource scopes",
                 description: "Verifies that scopes like `system/*.read` are supported"
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -691,6 +758,11 @@ module.exports = function(describe, it) {
                 name: "Rejects unknown resource scopes",
                 description: "Verifies that scopes like `system/UnknownResource.read` are rejected"
             }, async (cfg, api) => {
+                if (cfg.authType == "client-credentials") {
+                    return api.setNotSupported(
+                        `This test is not not applicable for servers using client-credentials authentication`
+                    );
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -737,6 +809,9 @@ module.exports = function(describe, it) {
                     "attempts to authorize using `test-bad-jku` as `jky` header value and " +
                     "expects that to produce an error."
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 if (!cfg.privateKey) {
                     return api.setNotSupported(`No privateKey configuration found for this server`);
                 }
@@ -778,6 +853,9 @@ module.exports = function(describe, it) {
                     "request that is completely valid, except that the authentication token " +
                     "is signed with unknown private key."
             }, async (cfg, api) => {
+                if (cfg.authType != "backend-services") {
+                    return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+                }
                 const req = await request({
                     method   : "POST",
                     uri      : cfg.tokenEndpoint,
@@ -825,113 +903,121 @@ module.exports = function(describe, it) {
                 // });
             });
 
-            it ({
-                id  : "Auth-20",
-                name: "Authorization using JWKS URL and ES384 keys",
-                description: "Verify that the server supports JWKS URL authorization using ES384 keys. This would also prove " +
-                    "that JWK keys rotation works because this test will create new key, every time it is executed."
-            }, async (cfg, api) => {
+            // it ({
+            //     id  : "Auth-20",
+            //     name: "Authorization using JWKS URL and ES384 keys",
+            //     description: "Verify that the server supports JWKS URL authorization using ES384 keys. This would also prove " +
+            //         "that JWK keys rotation works because this test will create new key, every time it is executed."
+            // }, async (cfg, api) => {
 
-                if (cfg.cli) {
-                    return api.setNotSupported(`This test cannot be executed in CLI`);
-                }
+            //     if (cfg.authType != "backend-services") {
+            //         return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+            //     }
 
-                if (!cfg.jwksUrlAuth || !cfg.jwksUrl) {
-                    return api.setNotSupported(`This server is not configured to support authorization using JWKS URL`);
-                }
+            //     if (cfg.cli) {
+            //         return api.setNotSupported(`This test cannot be executed in CLI`);
+            //     }
 
-                const jwks = await createJWKS("ES384");
-                const privateKey = jwks.keys.find(k => k.key_ops.indexOf("sign") > -1);
-                const publicKey  = jwks.keys.find(k => k.key_ops.indexOf("verify") > -1);
+            //     if (!cfg.jwksUrlAuth || !cfg.jwksUrl) {
+            //         return api.setNotSupported(`This server is not configured to support authorization using JWKS URL`);
+            //     }
 
-                const token = createClientAssertion({
-                    aud: cfg.tokenEndpoint,
-                    iss: cfg.clientId,
-                    sub: cfg.clientId
-                }, {
-                    header: {
-                        jku: cfg.jwksUrl
-                    }
-                }, privateKey);
+            //     const jwks = await createJWKS("ES384");
+            //     const privateKey = jwks.keys.find(k => k.key_ops.indexOf("sign") > -1);
+            //     const publicKey  = jwks.keys.find(k => k.key_ops.indexOf("verify") > -1);
 
-                const authorizationRequest = authenticate(cfg.tokenEndpoint, {
-                    client_assertion: token
-                });
+            //     const token = createClientAssertion({
+            //         aud: cfg.tokenEndpoint,
+            //         iss: cfg.clientId,
+            //         sub: cfg.clientId
+            //     }, {
+            //         header: {
+            //             jku: cfg.jwksUrl
+            //         }
+            //     }, privateKey);
 
-                // Make a special call to our API that will temporarily override
-                // the public key of this server that is hosted at cfg.jwksUrl
-                await request({
-                    uri : `${cfg.jwksUrl}/override`,
-                    json: true,
-                    strictSSL: cfg.strictSSL,
-                    method: "POST",
-                    form: {
-                        serverId: cfg.id,
-                        publicKey: JSON.stringify(publicKey)
-                    }
-                }).promise();
+            //     const authorizationRequest = authenticate(cfg.tokenEndpoint, {
+            //         client_assertion: token
+            //     });
+
+            //     // Make a special call to our API that will temporarily override
+            //     // the public key of this server that is hosted at cfg.jwksUrl
+            //     await request({
+            //         uri : `${cfg.jwksUrl}/override`,
+            //         json: true,
+            //         strictSSL: cfg.strictSSL,
+            //         method: "POST",
+            //         form: {
+            //             serverId: cfg.id,
+            //             publicKey: JSON.stringify(publicKey)
+            //         }
+            //     }).promise();
                 
-                api.logRequest(authorizationRequest, "Authorization Request");
-                const { response } = await authorizationRequest.promise();
-                api.logResponse(response, "Authorization Response");
+            //     api.logRequest(authorizationRequest, "Authorization Request");
+            //     const { response } = await authorizationRequest.promise();
+            //     api.logResponse(response, "Authorization Response");
 
-                expectStatusCode(response, 200, "The client should get 200 response code from the authorization request");
-                expectJson(response, "The client should get a JSON response from the authorization request");
-            });
+            //     expectStatusCode(response, 200, "The client should get 200 response code from the authorization request");
+            //     expectJson(response, "The client should get a JSON response from the authorization request");
+            // });
 
-            it ({
-                id  : "Auth-21",
-                name: "Authorization using JWKS URL and RS384 keys",
-                description: "Verify that the server supports JWKS URL authorization using RS384 keys. This would also prove " +
-                    "that JWK keys rotation works because this test will create new key, every time it is executed."
-            }, async (cfg, api) => {
+            // it ({
+            //     id  : "Auth-21",
+            //     name: "Authorization using JWKS URL and RS384 keys",
+            //     description: "Verify that the server supports JWKS URL authorization using RS384 keys. This would also prove " +
+            //         "that JWK keys rotation works because this test will create new key, every time it is executed."
+            // }, async (cfg, api) => {
 
-                if (cfg.cli) {
-                    return api.setNotSupported(`This test cannot be executed in CLI`);
-                }
+            //     if (cfg.authType != "backend-services") {
+            //         return api.setNotSupported(`This test is only applicable for servers that support SMART Backend Services authorization`);
+            //     }
 
-                if (!cfg.jwksUrlAuth || !cfg.jwksUrl) {
-                    return api.setNotSupported(`This server is not configured to support authorization using JWKS URL`);
-                }
+            //     if (cfg.cli) {
+            //         return api.setNotSupported(`This test cannot be executed in CLI`);
+            //     }
 
-                const jwks = await createJWKS("RS384");
-                const privateKey = jwks.keys.find(k => k.key_ops.indexOf("sign") > -1);
-                const publicKey  = jwks.keys.find(k => k.key_ops.indexOf("verify") > -1);
+            //     if (!cfg.jwksUrlAuth || !cfg.jwksUrl) {
+            //         return api.setNotSupported(`This server is not configured to support authorization using JWKS URL`);
+            //     }
 
-                const token = createClientAssertion({
-                    aud: cfg.tokenEndpoint,
-                    iss: cfg.clientId,
-                    sub: cfg.clientId
-                }, {
-                    header: {
-                        jku: cfg.jwksUrl
-                    }
-                }, privateKey);
+            //     const jwks = await createJWKS("RS384");
+            //     const privateKey = jwks.keys.find(k => k.key_ops.indexOf("sign") > -1);
+            //     const publicKey  = jwks.keys.find(k => k.key_ops.indexOf("verify") > -1);
 
-                const authorizationRequest = authenticate(cfg.tokenEndpoint, {
-                    client_assertion: token
-                });
+            //     const token = createClientAssertion({
+            //         aud: cfg.tokenEndpoint,
+            //         iss: cfg.clientId,
+            //         sub: cfg.clientId
+            //     }, {
+            //         header: {
+            //             jku: cfg.jwksUrl
+            //         }
+            //     }, privateKey);
 
-                // Make a special call to our API that will temporarily override
-                // the public key of this server that is hosted at cfg.jwksUrl
-                await request({
-                    uri : `${cfg.jwksUrl}/override`,
-                    json: true,
-                    strictSSL: cfg.strictSSL,
-                    method: "POST",
-                    form: {
-                        serverId : cfg.id,
-                        publicKey: JSON.stringify(publicKey)
-                    }
-                }).promise();
+            //     const authorizationRequest = authenticate(cfg.tokenEndpoint, {
+            //         client_assertion: token
+            //     });
 
-                api.logRequest(authorizationRequest, "Authorization Request");
-                const { response } = await authorizationRequest.promise();
-                api.logResponse(response, "Authorization Response");
+            //     // Make a special call to our API that will temporarily override
+            //     // the public key of this server that is hosted at cfg.jwksUrl
+            //     await request({
+            //         uri : `${cfg.jwksUrl}/override`,
+            //         json: true,
+            //         strictSSL: cfg.strictSSL,
+            //         method: "POST",
+            //         form: {
+            //             serverId : cfg.id,
+            //             publicKey: JSON.stringify(publicKey)
+            //         }
+            //     }).promise();
 
-                expectStatusCode(response, 200, "The client should get 200 response code from the authorization request");
-                expectJson(response, "The client should get a JSON response from the authorization request");
-            });
+            //     api.logRequest(authorizationRequest, "Authorization Request");
+            //     const { response } = await authorizationRequest.promise();
+            //     api.logResponse(response, "Authorization Response");
+
+            //     expectStatusCode(response, 200, "The client should get 200 response code from the authorization request");
+            //     expectJson(response, "The client should get a JSON response from the authorization request");
+            // });
         });
 
     });

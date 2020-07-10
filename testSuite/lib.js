@@ -56,8 +56,8 @@ function stripObjectValues(obj, value, deep)
 }
 
 /**
- * A wrapper for the request function. Returns the request object that you can
- * either pipe to, or use `request(options).promise().then().catch()
+ * A wrapper for the request function. Returns the request object that you
+ * can either pipe to, or use `request(options).promise().then().catch()`
  * @param {Object|String} options
  */
 function customRequest(options)
@@ -103,7 +103,7 @@ function wait(ms)
 
 /**
  * Check if the given @response has the desired status @code
- * @param {Response} response The response to check
+ * @param {request.Response} response The response to check
  * @param {Number} code The expected status code
  * @param {String} message Optional custom message
  */
@@ -117,7 +117,7 @@ function expectStatusCode(response, code, message = "")
 
 /**
  * Check if the given @response has the desired status @text
- * @param {Response} response The response to check
+ * @param {request.Response} response The response to check
  * @param {String} text The expected status text
  * @param {String} message Optional custom message
  */
@@ -131,7 +131,7 @@ function expectStatusText(response, text, message = "")
 
 /**
  * Check if the given @response has a 401 status code
- * @param {Response} response The response to check
+ * @param {request.Response} response The response to check
  * @param {String} message Optional custom message
  */
 function expectUnauthorized(response, message = "")
@@ -147,7 +147,7 @@ function expectUnauthorized(response, message = "")
 
 /**
  * Verify that the response is JSON
- * @param {Response} response The response to check
+ * @param {request.Response} response The response to check
  * @param {String} message Optional custom message
  */
 function expectJson(response, message = "the server must reply with JSON content-type header")
@@ -157,7 +157,7 @@ function expectJson(response, message = "the server must reply with JSON content
 
 /**
  * Verify that the response body contains an OperationOutcome
- * @param {Response} response The response to check
+ * @param {request.Response} response The response to check
  * @param {String} message Optional custom message
  */
 function expectOperationOutcome(response, message = "")
@@ -201,6 +201,45 @@ function expectOperationOutcome(response, message = "")
     }
 }
 
+
+/**
+ * Given a response object, generates and throws detailed HttpError.
+ * @param {request.Response} resp The `Response` object of a failed `fetch` request
+ */
+function getResponseError(resp)
+{
+    let msg = `Requesting ${resp.request.uri.href} returned ${resp.statusCode} ${resp.statusMessage}`;
+
+    try {
+        const type = resp.headers["content-type"] || "text/plain";
+
+        if (type.match(/\bjson\b/i)) {
+            let json;
+            if (typeof resp.body == "string") {
+                json = JSON.parse(resp.body);
+            }
+            if (typeof resp.body == "object") {
+                json = resp.body;
+            }
+            if (json.resourceType == "OperationOutcome") {
+                msg += "; " + json.issue.map(i => i.details.text).join("; ");
+            }
+            else {
+                msg += "; " + JSON.stringify(json);
+            }
+        }
+        if (type.match(/^text\//i)) {
+            let txt = String(resp.body).trim();
+            if (txt != resp.statusMessage) {
+                msg += "; " + resp.body;
+            }
+        }
+    } catch (_) {
+        // ignore
+    }
+
+    return msg;
+}
 
 /**
  * Implements all the interactions with a bulk-data server that tests may need
@@ -251,6 +290,35 @@ class BulkDataClient
         return customRequest(requestOptions);
     }
 
+    async authorizeWithCredentials({ requestLabel, responseLabel })
+    {
+        const authHeader = Buffer.from(
+            `${this.options.clientId}:${this.options.clientSecret}`
+        ).toString("base64");
+
+        const request = customRequest({
+            method   : "POST",
+            uri      : this.options.tokenEndpoint,
+            strictSSL: !!this.options.strictSSL,
+            json     : true,
+            headers: {
+                authorization: `Basic ${authHeader}`
+            }
+        });
+
+        this.testApi.logRequest(request, requestLabel || "Authorization Request");
+        const { response } = await request.promise();
+        this.testApi.logResponse(response, responseLabel || "Authorization Response");
+
+        if (!response.body.access_token) {
+            throw new Error(
+                `Unable to authorize. ${getResponseError(response)}`
+            );
+        }
+
+        return response.body.access_token;
+    }
+
     /**
      * Makes an authorization request and logs the request and the response.
      * @param {Object} options
@@ -260,6 +328,20 @@ class BulkDataClient
      */
     async authorize({ scope, requestLabel, responseLabel })
     {
+        if (this.options.authType == "none") {
+            throw new Error('Unable to authorize! This server does not support authentication (according to the "authType" option).');
+        }
+
+        if (this.options.authType == "client-credentials") {
+            if (!this.options.clientSecret) {
+                throw new Error('Unable to authorize! A "clientSecret" option is needed for client-credentials authentication.')
+            }
+            return await this.authorizeWithCredentials({
+                requestLabel,
+                responseLabel
+            });
+        }
+
         const request = customRequest({
             method   : "POST",
             uri      : this.options.tokenEndpoint,
@@ -283,9 +365,7 @@ class BulkDataClient
 
         if (!response.body.access_token) {
             throw new Error(
-                `Unable to authorize. The authorization request returned ${
-                    response.statusCode
-                }: "${response.statusMessage}"`
+                `Unable to authorize. ${getResponseError(response)}`
             );
         }
 
@@ -294,10 +374,12 @@ class BulkDataClient
 
     /**
      * This is an async getter for the access token. 
-     * @param {Object} options
-     * @param {Boolean} [options.force] Set to true to make the client re-authorize,
+     * @param {object} options
+     * @param {boolean} [options.force] Set to true to make the client re-authorize,
      * even if it currently has an access token
-     * @param {String} [options.scope] Scopes to request (default "system/*.read")
+     * @param {string} [options.scope] Scopes to request (default "system/*.read")
+     * @param {string} [options.requestLabel]
+     * @param {string} [options.responseLabel]
      */
     async getAccessToken(options = {})
     {
@@ -345,7 +427,8 @@ class BulkDataClient
 
         if (!this.kickOffResponse.headers["content-location"]) {
             throw new Error(
-                "Trying to check status but the kick-off response did not include a content-location header"
+                "Trying to check status but the kick-off response did not include a " +
+                `content-location header. ${getResponseError(this.kickOffResponse)}`
             );
         }
 
@@ -375,7 +458,8 @@ class BulkDataClient
 
         if (!this.kickOffResponse.headers["content-location"]) {
             throw new Error(
-                "Trying to wait for export but the kick-off response did not include a content-location header"
+                "Trying to wait for export but the kick-off response did not " +
+                `include a content-location header. ${getResponseError(this.kickOffResponse)}`
             );
         }
 
@@ -482,7 +566,8 @@ class BulkDataClient
 
         if (!this.kickOffResponse.headers["content-location"]) {
             throw new Error(
-                "Trying to cancel but the kick-off response did not include a content-location header"
+                "Trying to cancel but the kick-off response did not include a " +
+                `content-location header. ${getResponseError(this.kickOffResponse)}`
             );
         }
 
@@ -550,4 +635,7 @@ module.exports = {
     expectJson,
     wait,
     BulkDataClient,
+    createJWKS,
+    // authenticate,
+    getResponseError
 };
