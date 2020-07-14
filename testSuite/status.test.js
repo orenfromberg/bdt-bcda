@@ -135,7 +135,8 @@ module.exports = function(describe, it) {
             // The server MAY return an Expires header indicating when the files listed will no longer be available.
             if (client.statusResponse.headers["expires"]) {
                 expect(client.statusResponse.headers["expires"], "the expires header must be a string if present").to.be.a.string();
-                expect(moment(client.statusResponse.headers["expires"]).diff(moment(), "seconds") > 0).to.be.true();
+                const expiresDate = new Date(client.statusResponse.headers["expires"])
+                expect(moment(expiresDate).diff(moment(), "seconds") > 0).to.be.true();
             }
 
             // transactionTime - a FHIR instant type that indicates the server's time when the query is run.
