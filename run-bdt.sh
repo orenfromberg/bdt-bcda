@@ -31,4 +31,4 @@ fi
 TOKEN=$(echo $RESULT | jq -r .access_token) \
 NODE_OPTIONS="--max-old-space-size=8192" \
 BASE_URL=${BASE_URL} \
-node index.js --pattern "testSuite/**/!(authorization.test.js)"
+node index.js --patern "testSuite/status.test.js"
