@@ -1,4 +1,5 @@
-const expect           = require("code").expect;
+const Code = require('code');
+const expect = Code.expect;;
 const moment           = require("moment");
 const {
     BulkDataClient,
@@ -6,6 +7,7 @@ const {
 } = require("./lib");
 
 
+Code.settings.truncateMessages = false;
 const REGEXP_INSTANT = new RegExp(
     "([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-" +
     "(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3])" +
@@ -140,7 +142,7 @@ module.exports = function(describe, it) {
                 expect(client.statusResponse.headers["expires"], "the expires header must be a string if present").to.be.a.string();
                 const expiresDate = new Date(client.statusResponse.headers["expires"])
                 console.log("Before expires diff check %s %s", expiresDate.toString(), moment().toString())
-                expect(moment(expiresDate).diff(moment(), "seconds") > 0).to.be.true();
+                expect(moment(expiresDate).diff(moment(), "seconds")).to.be.above(0);
             }
 
             // transactionTime - a FHIR instant type that indicates the server's time when the query is run.
