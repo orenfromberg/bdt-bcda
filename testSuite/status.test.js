@@ -128,14 +128,18 @@ module.exports = function(describe, it) {
 
             const body = client.statusResponse.body;
 
+            console.log("Before status code check")
             expect(client.statusResponse.statusCode, "Responds with 200 for completed transactions").to.equal(200);
 
+            console.log("Before content-type check")
             expect(client.statusResponse.headers["content-type"], "responds with JSON").to.match(/^application\/json/i);
 
             // The server MAY return an Expires header indicating when the files listed will no longer be available.
-            if (client.statusResponse.headers["expires"]) {
+                if (client.statusResponse.headers["expires"]) {
+                console.log("Before expiry header type check")
                 expect(client.statusResponse.headers["expires"], "the expires header must be a string if present").to.be.a.string();
                 const expiresDate = new Date(client.statusResponse.headers["expires"])
+                console.log("Before expires diff check %s %s", expiresDate.toString(), moment().toString())
                 expect(moment(expiresDate).diff(moment(), "seconds") > 0).to.be.true();
             }
 
